@@ -8,6 +8,11 @@ easy to use without extra dependencies.
 
 - [Review exactly what you are about to commit](guides/review-before-commit.md)
 
+## Tools
+
+- [File checksum](guides/file-checksum.md): compute or verify a SHA-256 digest
+  without loading the entire file into memory. Requires Python 3.8 or later.
+
 ## Contributing
 
 Keep each commit focused on one useful improvement. Include usage instructions
