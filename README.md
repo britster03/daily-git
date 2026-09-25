@@ -12,6 +12,8 @@ easy to use without extra dependencies.
 
 - [File checksum](guides/file-checksum.md): compute or verify a SHA-256 digest
   without loading the entire file into memory. Requires Python 3.8 or later.
+- [JSON formatter](guides/json-format.md): validate and format JSON from a file
+  or standard input, with duplicate-key detection. Requires Python 3.8 or later.
 
 ## Contributing
 
