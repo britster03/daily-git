@@ -7,6 +7,7 @@ easy to use without extra dependencies.
 ## Guides
 
 - [Review exactly what you are about to commit](guides/review-before-commit.md)
+- [Find a regression with Git bisect](guides/find-regression-with-bisect.md)
 
 ## Tools
 
