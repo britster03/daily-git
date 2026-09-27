@@ -107,6 +107,34 @@ class FileChecksumTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.decode(), hashlib.sha256(b"file contents").hexdigest() + "\n")
 
+    def test_additional_algorithms_for_files_and_stdin(self):
+        data = b"abc"
+        self.path.write_bytes(data)
+        for algorithm in ["sha512", "blake2b"]:
+            with self.subTest(algorithm=algorithm):
+                expected = hashlib.new(algorithm, data).hexdigest()
+                self.assertEqual(self.run_cli("--algorithm", algorithm), (0, expected + "\n", ""))
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT), "-", "--algorithm", algorithm,
+                     "--expect", expected.upper()], input=data, capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, b"OK: checksum matches\n")
+                code, stdout, stderr = self.run_cli("--algorithm", algorithm, "--expect", "0" * 128)
+                self.assertEqual((code, stdout), (1, ""))
+                self.assertIn("MISMATCH", stderr)
+
+    def test_digest_length_matches_algorithm(self):
+        for algorithm, length in [("sha256", 128), ("sha512", 64), ("blake2b", 64)]:
+            with self.subTest(algorithm=algorithm), self.assertRaises(SystemExit) as raised:
+                self.run_cli("--algorithm", algorithm, "--expect", "0" * length)
+            self.assertEqual(raised.exception.code, 2)
+
+    def test_unsupported_algorithm(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.run_cli("--algorithm", "not-a-hash")
+        self.assertEqual(raised.exception.code, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,6 +19,23 @@ python3 tools/file_checksum.py "path/to/download.zip" --expect YOUR_64_CHARACTER
 
 Replace the placeholder with the actual digest. Uppercase hex is accepted too.
 
+## Choose an algorithm
+
+SHA-256 remains the default. When a publisher provides a SHA-512 or BLAKE2b
+checksum, select the same algorithm explicitly:
+
+```sh
+python3 tools/file_checksum.py download.zip --algorithm sha512
+python3 tools/file_checksum.py download.zip --algorithm blake2b --expect YOUR_128_CHARACTER_DIGEST
+```
+
+`sha256` expects 64 hexadecimal characters; `sha512` and `blake2b` expect 128.
+BLAKE2b uses its default 64-byte digest with no key, salt, or personalization.
+The tool does not infer an algorithm from the digest length: SHA-512 and
+BLAKE2b have the same output length but different values. The selected algorithm
+also applies when reading standard input. Mismatches still exit with code 1,
+and a malformed expected digest exits with code 2 before reading input.
+
 ## Hash piped input
 
 Pass `-` to hash standard input as raw bytes, without decoding text or changing
