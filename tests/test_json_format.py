@@ -74,6 +74,36 @@ class JsonFormatCliTests(unittest.TestCase):
         self.assertEqual(result.stdout, '')
         self.assertIn('duplicate object key', result.stderr)
 
+    def test_check_is_silent_for_valid_stdin(self):
+        for flags in [['--check'], ['--check', '--compact', '--sort-keys']]:
+            with self.subTest(flags=flags):
+                result = self.run_cli(*flags, source='{"token":"keep out of logs"}')
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '', ''))
+
+    def test_check_keeps_validation_rules(self):
+        for source in ['{"a":1,"a":2}', 'NaN', '1e999', '{broken', '']:
+            with self.subTest(source=source):
+                result = self.run_cli('--check', source=source)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, '')
+                self.assertIn('Invalid JSON', result.stderr)
+
+    def test_check_file_is_not_reformatted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'config.json'
+            original = b'{  "b":2, "a":1  }'
+            path.write_bytes(original)
+            result = self.run_cli(str(path), '--check')
+            self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '', ''))
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_check_missing_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = self.run_cli(str(Path(directory) / 'missing.json'), '--check')
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(result.stdout, '')
+            self.assertIn('Unable to read JSON', result.stderr)
+
     def test_missing_file_and_bad_encoding(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "input.json"

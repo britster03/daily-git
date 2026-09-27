@@ -21,6 +21,24 @@ object keys. `--sort-keys` sorts keys recursively; `--compact` removes optional
 whitespace. Unicode characters are escaped in output and retain their value
 when the JSON is parsed.
 
+## Validate without printing the document
+
+Use `--check` in a script or CI step when you need an exit status without dumping
+the formatted configuration into a log:
+
+```sh
+python3 tools/json_format.py config.json --check
+printf '%s' '{"enabled":true}' | python3 tools/json_format.py --check
+```
+
+Valid input produces no output and exits with code 0. Invalid input still reports
+the reason on standard error and exits with code 1; unreadable files exit with
+code 2. The input file is never reformatted. This checks validity, not whether
+the existing whitespace or key order matches a style. Formatting flags are
+accepted with `--check`, but their output is suppressed. Validation follows the
+same numeric and memory limits as formatting. Error messages can include key
+names or file paths, so `--check` is not a general log-redaction mechanism.
+
 ## Validation behavior
 
 The tool rejects malformed JSON, trailing commas, comments, multiple top-level
@@ -38,7 +56,7 @@ scalar values such as `null` are valid top-level JSON.
 
 | Exit code | Meaning |
 | --- | --- |
-| 0 | JSON validated and formatted |
+| 0 | JSON validated (and formatted unless `--check` is used) |
 | 1 | JSON is invalid or cannot be represented by the formatter |
 | 2 | Input could not be read, or command arguments were invalid |
 

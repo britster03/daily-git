@@ -39,6 +39,7 @@ def main(argv=None):
     parser.add_argument("file", nargs="?", default="-", help="input path, or - for stdin (default)")
     parser.add_argument("--sort-keys", action="store_true", help="sort object keys recursively")
     parser.add_argument("--compact", action="store_true", help="omit optional whitespace")
+    parser.add_argument("--check", action="store_true", help="validate without printing the document")
     args = parser.parse_args(argv)
     try:
         source = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
@@ -50,7 +51,8 @@ def main(argv=None):
     except (ValueError, RecursionError) as error:
         print("Invalid JSON: {}".format(error), file=sys.stderr)
         return 1
-    sys.stdout.write(output)
+    if not args.check:
+        sys.stdout.write(output)
     return 0
 
 
