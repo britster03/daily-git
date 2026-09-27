@@ -19,6 +19,25 @@ python3 tools/file_checksum.py "path/to/download.zip" --expect YOUR_64_CHARACTER
 
 Replace the placeholder with the actual digest. Uppercase hex is accepted too.
 
+## Hash piped input
+
+Pass `-` to hash standard input as raw bytes, without decoding text or changing
+line endings. This also works with `--expect`:
+
+```sh
+printf '%s' 'abc' | python3 tools/file_checksum.py -
+python3 tools/file_checksum.py - --expect ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad < sample.bin
+```
+
+The first command prints the digest used in the second example; verification
+succeeds when `sample.bin` contains exactly the three bytes `abc`. Input is still
+read in bounded chunks, including when it comes from a pipe. An empty stream has
+the SHA-256 digest of an empty file. Use `./-` to hash a file literally named `-`.
+In Bash or Zsh, enable `set -o pipefail` when you also need to detect a failed
+upstream command: the checksum tool cannot tell whether a producer exited early.
+
+## Exit codes
+
 Exit codes are useful in shell scripts:
 
 | Code | Meaning |

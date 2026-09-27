@@ -1,11 +1,16 @@
 import contextlib
 import hashlib
 import io
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from tools.file_checksum import main, sha256_file
+from tools.file_checksum import main, sha256_file, sha256_stream
+
+
+SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "file_checksum.py"
 
 
 class FileChecksumTests(unittest.TestCase):
@@ -62,6 +67,45 @@ class FileChecksumTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(SystemExit) as raised:
                 self.run_cli("--expect", value)
             self.assertEqual(raised.exception.code, 2)
+
+    def test_stream_reads_bounded_chunks_and_leaves_stream_open(self):
+        class BoundedStream(io.BytesIO):
+            def read(self, size=-1):
+                if not 0 < size <= 1024 * 1024:
+                    raise AssertionError("unbounded read")
+                return super().read(size)
+
+        data = b"abc" * 1000000
+        with BoundedStream(data) as stream:
+            self.assertEqual(sha256_stream(stream), hashlib.sha256(data).hexdigest())
+            self.assertFalse(stream.closed)
+
+    def test_binary_stdin_including_empty_input(self):
+        for data in [b"", bytes(range(256)) * 10000]:
+            with self.subTest(length=len(data)):
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT), "-"], input=data, capture_output=True
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.decode(), hashlib.sha256(data).hexdigest() + "\n")
+
+    def test_stdin_verification(self):
+        for expected, code in [(hashlib.sha256(b"abc").hexdigest(), 0), ("0" * 64, 1)]:
+            with self.subTest(code=code):
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT), "-", "--expect", expected],
+                    input=b"abc", capture_output=True,
+                )
+                self.assertEqual(result.returncode, code, result.stderr)
+
+    def test_literal_dash_filename(self):
+        (Path(self.directory.name) / "-").write_bytes(b"file contents")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "./-"], cwd=self.directory.name,
+            input=b"different stdin", capture_output=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.decode(), hashlib.sha256(b"file contents").hexdigest() + "\n")
 
 
 if __name__ == "__main__":
