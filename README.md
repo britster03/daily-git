@@ -9,6 +9,7 @@ easy to use without extra dependencies.
 - [Review exactly what you are about to commit](guides/review-before-commit.md)
 - [Find a regression with Git bisect](guides/find-regression-with-bisect.md)
 - [Run subprocesses safely from Python](guides/python-subprocess.md)
+- [Replace generated files atomically](guides/atomic-file-updates.md)
 
 ## Tools
 
