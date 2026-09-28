@@ -13,6 +13,8 @@ easy to use without extra dependencies.
 
 ## Tools
 
+- [File comparison](guides/compare-files.md): locate the first differing byte
+  in two files using bounded memory. Requires Python 3.8 or later.
 - [Line-ending inspector](guides/line-endings.md): report LF, CRLF, mixed endings,
   and missing final newlines without rewriting files. Requires Python 3.8 or later.
 - [File checksum](guides/file-checksum.md): compute or verify SHA-256, SHA-512, or BLAKE2b digests
