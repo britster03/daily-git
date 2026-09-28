@@ -39,6 +39,10 @@ def inspect_stream(stream, chunk_size=1024 * 1024):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("file", type=Path)
+    parser.add_argument("--expect", choices=("lf", "crlf", "cr"),
+                        help="fail if any line ending uses another style")
+    parser.add_argument("--require-final-newline", action="store_true",
+                        help="fail when a nonempty file lacks a final newline")
     args = parser.parse_args(argv)
     try:
         with args.file.open("rb") as stream:
@@ -47,7 +51,14 @@ def main(argv=None):
         print("Unable to read file: {}".format(error), file=sys.stderr)
         return 2
     print(json.dumps(report, indent=2))
-    return 0
+    failed = False
+    if args.expect and any(report[style] for style in ("lf", "crlf", "cr") if style != args.expect):
+        print("Unexpected line ending: expected only {}".format(args.expect.upper()), file=sys.stderr)
+        failed = True
+    if args.require_final_newline and report["bytes"] and not report["ends_with_newline"]:
+        print("Missing final newline", file=sys.stderr)
+        failed = True
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

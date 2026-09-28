@@ -55,6 +55,31 @@ class NewlineReportTests(unittest.TestCase):
             self.assertEqual(result.stdout, "")
             self.assertIn("Unable to read file", result.stderr)
 
+    def test_cli_line_ending_policies(self):
+        script = Path(__file__).resolve().parents[1] / "tools" / "newline_report.py"
+        cases = [
+            (b"a\n", ["--expect", "lf", "--require-final-newline"], 0),
+            (b"a\r\n", ["--expect", "crlf"], 0),
+            (b"a\r", ["--expect", "cr"], 0),
+            (b"a\r\nb\n", ["--expect", "lf"], 1),
+            (b"a\n", ["--expect", "crlf"], 1),
+            (b"a\r\nlast", ["--expect", "lf", "--require-final-newline"], 1),
+            (b"last", ["--expect", "lf"], 0),
+            (b"last", ["--require-final-newline"], 1),
+            (b"", ["--expect", "lf", "--require-final-newline"], 0),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "input.txt"
+            for data, flags, expected in cases:
+                with self.subTest(data=data, flags=flags):
+                    path.write_bytes(data)
+                    result = subprocess.run([sys.executable, str(script), str(path), *flags],
+                                            capture_output=True, text=True)
+                    self.assertEqual(result.returncode, expected, result.stderr)
+                    self.assertEqual(json.loads(result.stdout)["bytes"], len(data))
+                    self.assertEqual(bool(result.stderr), bool(expected))
+                    self.assertEqual(path.read_bytes(), data)
+
 
 if __name__ == "__main__":
     unittest.main()

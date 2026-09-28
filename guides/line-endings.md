@@ -28,6 +28,24 @@ The input is opened read-only and processed in one-MiB chunks; CRLF pairs split
 across chunk boundaries are handled correctly. Exit code 0 means the report was
 produced (even for mixed endings); code 2 means an input or argument error.
 
+## Enforce a policy in a script or CI job
+
+```sh
+python3 tools/newline_report.py source.py --expect lf --require-final-newline
+```
+
+`--expect lf` rejects CRLF and standalone CR endings. Choose `crlf` or `cr`
+instead when that is your project's required style. This checks every ending,
+so a file with mixed styles fails. A file with no endings passes the style check;
+use `--require-final-newline` to reject nonempty files without a final newline.
+Empty files pass both checks.
+
+The JSON report still goes to standard output. Policy failures add explanations
+on standard error and exit with code 1; both violations are reported when both
+checks fail. Code 0 means the requested checks passed, and code 2 still denotes
+an input or argument error. The checks never rewrite the input. These policies
+use the same raw-byte rules and encoding limitations as the report below.
+
 This is a raw-byte inspection tool for UTF-8 and other ASCII-compatible text.
 It does not detect encodings or decode UTF-16/UTF-32, and binary data may contain
 bytes that resemble line endings. It reports what is on disk, which can differ
