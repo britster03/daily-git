@@ -41,6 +41,8 @@ names or file paths, so `--check` is not a general log-redaction mechanism.
 
 ## Validation behavior
 
+These rules apply to a single document, or separately to each JSON Lines record.
+
 The tool rejects malformed JSON, trailing commas, comments, multiple top-level
 values, duplicate object keys (including nested objects), and the non-standard
 numeric values `NaN`, `Infinity`, and `-Infinity`. For example:
@@ -50,7 +52,7 @@ printf '%s' '{"port":8000,"port":9000}' | python3 tools/json_format.py
 ```
 
 This exits with code 1 and reports the duplicate `port` key on standard error.
-No formatted JSON is emitted on validation failure. Keys may repeat in separate
+In single-document mode, no formatted JSON is emitted on validation failure. Keys may repeat in separate
 objects; only repeated keys within the same object are rejected. Arrays and
 scalar values such as `null` are valid top-level JSON.
 
@@ -60,11 +62,39 @@ scalar values such as `null` are valid top-level JSON.
 | 1 | JSON is invalid or cannot be represented by the formatter |
 | 2 | Input could not be read, or command arguments were invalid |
 
-Files must use UTF-8 without a byte-order mark. The complete document is loaded
-into memory. Decimal numbers use Python's floating-point representation, so the
+Files must use UTF-8 without a byte-order mark. Single-document mode loads the
+complete document into memory. Decimal numbers use Python's floating-point representation, so the
 tool is unsuitable for preserving exact decimal precision or the original
 spelling of numbers. Values that overflow to infinity (for example `1e999`) are
 rejected. This is a formatter and syntax check, not a JSON Schema validator.
+
+## Process JSON Lines logs and datasets
+
+Use `--json-lines` for a file containing one JSON value per physical line:
+
+```sh
+python3 tools/json_format.py events.jsonl --json-lines --check
+python3 tools/json_format.py events.jsonl --json-lines --sort-keys > normalized.jsonl
+printf '%s\n' '{"count":1}' '[2,3]' 'null' | python3 tools/json_format.py --json-lines
+```
+
+Objects, arrays, and scalar values are accepted. Empty input is a valid stream
+with zero records; blank or whitespace-only lines are invalid records. A final
+record need not have a trailing newline. LF and CRLF input are accepted.
+Multi-line JSON documents must use the normal single-document mode instead.
+
+Output is always one compact JSON value followed by a newline per record, even
+without `--compact`. `--sort-keys` sorts each record and `--check` suppresses all
+formatted output. Each record uses the same duplicate-key and numeric checks
+as normal mode. Invalid records stop processing with exit code 1 and a one-based
+input line number in the error message.
+
+Records are read and formatted one at a time, so memory use scales with the
+largest record rather than the entire file. A single very large record can
+still consume significant memory. When formatting, earlier successful records
+may already have been written before a later error: check the exit status before
+using redirected output. Use `--check` first or stage output in a separate
+temporary file when you need to publish only a completely valid result.
 
 Run its focused tests with:
 

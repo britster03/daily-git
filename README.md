@@ -19,8 +19,8 @@ easy to use without extra dependencies.
   and missing final newlines without rewriting files. Requires Python 3.8 or later.
 - [File checksum](guides/file-checksum.md): compute or verify SHA-256, SHA-512, or BLAKE2b digests
   without loading the entire file into memory. Requires Python 3.8 or later.
-- [JSON formatter](guides/json-format.md): validate and format JSON from a file
-  or standard input, with duplicate-key detection. Requires Python 3.8 or later.
+- [JSON formatter](guides/json-format.md): validate and format JSON or stream
+  JSON Lines records, with duplicate-key detection. Requires Python 3.8 or later.
 
 ## Contributing
 

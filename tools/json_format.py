@@ -1,6 +1,7 @@
 """Validate and format JSON from a UTF-8 file or standard input."""
 
 import argparse
+from contextlib import nullcontext
 import json
 import sys
 from pathlib import Path
@@ -34,25 +35,38 @@ def format_json(source, sort_keys=False, compact=False):
     ) + "\n"
 
 
+def format_records(stream, sort_keys=False):
+    """Yield one compact JSON record per input line, with numbered errors."""
+    for number, line in enumerate(stream, 1):
+        try:
+            yield format_json(line, sort_keys=sort_keys, compact=True)
+        except (ValueError, RecursionError) as error:
+            raise ValueError("line {}: {}".format(number, error)) from error
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("file", nargs="?", default="-", help="input path, or - for stdin (default)")
     parser.add_argument("--sort-keys", action="store_true", help="sort object keys recursively")
     parser.add_argument("--compact", action="store_true", help="omit optional whitespace")
     parser.add_argument("--check", action="store_true", help="validate without printing the document")
+    parser.add_argument("--json-lines", action="store_true",
+                        help="process one JSON value per line; output compact records")
     args = parser.parse_args(argv)
     try:
-        source = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
+        context = nullcontext(sys.stdin) if args.file == "-" else Path(args.file).open(encoding="utf-8")
+        with context as stream:
+            outputs = (format_records(stream, sort_keys=args.sort_keys) if args.json_lines else
+                       [format_json(stream.read(), sort_keys=args.sort_keys, compact=args.compact)])
+            for output in outputs:
+                if not args.check:
+                    sys.stdout.write(output)
     except (OSError, UnicodeError) as error:
-        print("Unable to read JSON: {}".format(error), file=sys.stderr)
+        print("Unable to read JSON or write output: {}".format(error), file=sys.stderr)
         return 2
-    try:
-        output = format_json(source, sort_keys=args.sort_keys, compact=args.compact)
     except (ValueError, RecursionError) as error:
         print("Invalid JSON: {}".format(error), file=sys.stderr)
         return 1
-    if not args.check:
-        sys.stdout.write(output)
     return 0
 
 

@@ -5,13 +5,19 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.json_format import format_json
+from tools.json_format import format_json, format_records
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "json_format.py"
 
 
 class JsonFormatTests(unittest.TestCase):
+    def test_records_are_processed_lazily(self):
+        records = format_records(iter(['{"a":1}\n', 'broken\n']))
+        self.assertEqual(next(records), '{"a":1}\n')
+        with self.assertRaisesRegex(ValueError, 'line 2:'):
+            next(records)
+
     def test_pretty_print(self):
         self.assertEqual(format_json('{"b":2,"a":1}'), '{\n  "b": 2,\n  "a": 1\n}\n')
 
@@ -57,6 +63,39 @@ class JsonFormatCliTests(unittest.TestCase):
             with self.subTest(args=args):
                 result = self.run_cli(*args, '--compact', '--sort-keys', source='{"b":2,"a":1}')
                 self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '{"a":1,"b":2}\n', ''))
+
+    def test_json_lines_normalizes_records(self):
+        result = self.run_cli('--json-lines', '--sort-keys',
+                              source=' {"z":2, "a":1}\r\n[1, 2]\nnull')
+        self.assertEqual((result.returncode, result.stdout, result.stderr),
+                         (0, '{"a":1,"z":2}\n[1,2]\nnull\n', ''))
+
+    def test_json_lines_errors_include_record_number(self):
+        for bad in ['\n', '  \n', '{"x":1,"x":2}\n', 'NaN\n', '1e999\n', '{} {}\n']:
+            with self.subTest(bad=bad):
+                result = self.run_cli('--json-lines', source='{}\n' + bad + 'true\n')
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, '{}\n')
+                self.assertIn('line 2:', result.stderr)
+
+    def test_json_lines_check_and_empty_stream(self):
+        for source in ['', '{}\ntrue\n']:
+            with self.subTest(source=source):
+                result = self.run_cli('--json-lines', '--check', source=source)
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '', ''))
+        result = self.run_cli('--json-lines', '--check', source='{}\nbroken\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, '')
+        self.assertIn('line 2:', result.stderr)
+
+    def test_json_lines_file_is_read_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'records.jsonl'
+            original = b'{ "a":1 }\n[true]\n'
+            path.write_bytes(original)
+            result = self.run_cli(str(path), '--json-lines')
+            self.assertEqual((result.returncode, result.stdout), (0, '{"a":1}\n[true]\n'))
+            self.assertEqual(path.read_bytes(), original)
 
     def test_file_remains_unchanged(self):
         with tempfile.TemporaryDirectory() as directory:
