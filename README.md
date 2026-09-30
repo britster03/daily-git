@@ -6,6 +6,7 @@ easy to use without extra dependencies.
 
 ## Guides
 
+- [Stop tracking an ignored generated file](guides/git-ignore-tracked-files.md)
 - [Review exactly what you are about to commit](guides/review-before-commit.md)
 - [Find a regression with Git bisect](guides/find-regression-with-bisect.md)
 - [Run subprocesses safely from Python](guides/python-subprocess.md)
