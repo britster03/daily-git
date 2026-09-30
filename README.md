@@ -13,6 +13,8 @@ easy to use without extra dependencies.
 
 ## Tools
 
+- [UTF-8 validator](guides/utf8-check.md): locate invalid byte sequences with
+  bounded memory. Requires Python 3.8 or later.
 - [File comparison](guides/compare-files.md): locate the first differing byte
   in two files using bounded memory. Requires Python 3.8 or later.
 - [Line-ending inspector](guides/line-endings.md): report LF, CRLF, mixed endings,
