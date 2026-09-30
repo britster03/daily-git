@@ -68,6 +68,11 @@ tool is unsuitable for preserving exact decimal precision or the original
 spelling of numbers. Values that overflow to infinity (for example `1e999`) are
 rejected. This is a formatter and syntax check, not a JSON Schema validator.
 
+Standard input also uses strict UTF-8, independently of the terminal encoding
+or `PYTHONIOENCODING`. Invalid bytes exit with code 2 instead of being silently
+replaced or preserved as surrogate characters. This applies to both JSON and
+JSON Lines; output escapes non-ASCII characters for portability.
+
 ## Process JSON Lines logs and datasets
 
 Use `--json-lines` for a file containing one JSON value per physical line:

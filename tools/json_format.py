@@ -23,6 +23,8 @@ def reject_constant(value):
 
 def format_json(source, sort_keys=False, compact=False):
     """Validate JSON and return its normalized representation with a newline."""
+    if isinstance(source, bytes):
+        source = source.decode("utf-8")
     value = json.loads(
         source, object_pairs_hook=unique_object, parse_constant=reject_constant
     )
@@ -38,6 +40,8 @@ def format_json(source, sort_keys=False, compact=False):
 def format_records(stream, sort_keys=False):
     """Yield one compact JSON record per input line, with numbered errors."""
     for number, line in enumerate(stream, 1):
+        if isinstance(line, bytes):
+            line = line.decode("utf-8")
         try:
             yield format_json(line, sort_keys=sort_keys, compact=True)
         except (ValueError, RecursionError) as error:
@@ -54,7 +58,7 @@ def main(argv=None):
                         help="process one JSON value per line; output compact records")
     args = parser.parse_args(argv)
     try:
-        context = nullcontext(sys.stdin) if args.file == "-" else Path(args.file).open(encoding="utf-8")
+        context = nullcontext(sys.stdin.buffer) if args.file == "-" else Path(args.file).open("rb")
         with context as stream:
             outputs = (format_records(stream, sort_keys=args.sort_keys) if args.json_lines else
                        [format_json(stream.read(), sort_keys=args.sort_keys, compact=args.compact)])

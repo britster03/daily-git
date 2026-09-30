@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -52,6 +53,20 @@ class JsonFormatTests(unittest.TestCase):
 
 
 class JsonFormatCliTests(unittest.TestCase):
+    def test_stdin_uses_strict_utf8_independent_of_terminal_encoding(self):
+        for flags in [[], ['--json-lines']]:
+            for encoding in ['utf-8:surrogateescape', 'ascii:surrogateescape', 'latin-1']:
+                with self.subTest(flags=flags, encoding=encoding):
+                    env = dict(os.environ, PYTHONIOENCODING=encoding)
+                    result = subprocess.run([sys.executable, str(SCRIPT), '--check', *flags],
+                                            input=b'"\xff"\n', capture_output=True, env=env)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertEqual(result.stdout, b'')
+                    valid = subprocess.run([sys.executable, str(SCRIPT), *flags],
+                                           input='"café"\n'.encode('utf-8'), capture_output=True, env=env)
+                    self.assertEqual(valid.returncode, 0, valid.stderr)
+                    self.assertEqual(json.loads(valid.stdout), 'café')
+
     def run_cli(self, *args, source=""):
         return subprocess.run(
             [sys.executable, str(SCRIPT), *args], input=source,
