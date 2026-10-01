@@ -15,7 +15,7 @@ easy to use without extra dependencies.
 
 ## Tools
 
-- [UTF-8 validator](guides/utf8-check.md): locate invalid byte sequences with
+- [UTF-8 validator](guides/utf8-check.md): locate invalid bytes in files or pipes with
   bounded memory. Requires Python 3.8 or later.
 - [File comparison](guides/compare-files.md): locate the first differing byte
   in two files using bounded memory. Requires Python 3.8 or later.

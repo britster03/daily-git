@@ -2,6 +2,7 @@
 
 import argparse
 import codecs
+from contextlib import nullcontext
 import json
 import sys
 from pathlib import Path
@@ -27,10 +28,11 @@ def check_stream(stream, chunk_size=1024 * 1024):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("file", type=Path)
+    parser.add_argument("file", help="input file, or - for binary standard input")
     args = parser.parse_args(argv)
     try:
-        with args.file.open("rb") as stream:
+        context = nullcontext(sys.stdin.buffer) if args.file == "-" else Path(args.file).open("rb")
+        with context as stream:
             report = check_stream(stream)
     except OSError as error:
         print("Unable to read file: {}".format(error), file=sys.stderr)
