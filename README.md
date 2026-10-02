@@ -15,6 +15,8 @@ easy to use without extra dependencies.
 
 ## Tools
 
+- [Gzip integrity checker](guides/gzip-check.md): verify compressed data without
+  writing extracted files. Requires Python 3.8 or later.
 - [UTF-8 validator](guides/utf8-check.md): locate invalid bytes in files or pipes with
   bounded memory. Requires Python 3.8 or later.
 - [File comparison](guides/compare-files.md): locate the first differing byte
