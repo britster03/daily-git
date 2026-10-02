@@ -7,6 +7,18 @@ Inspect the bytes before changing editor settings or normalizing the file:
 python3 tools/newline_report.py "path/to/file.txt"
 ```
 
+Use `-` to inspect raw bytes from a pipe or redirected standard input:
+
+```sh
+printf 'first\r\nsecond\n' | python3 tools/newline_report.py -
+python3 tools/newline_report.py - --expect lf --require-final-newline < source.py
+```
+
+Piped input preserves CR and LF bytes exactly and supports the same policy flags
+and JSON report as files. Use `./-` for a file literally named `-`. In Bash or
+Zsh, enable `set -o pipefail` when an upstream producer's failure must also fail
+the pipeline; a valid report alone cannot establish that the producer succeeded.
+
 The tool requires Python 3.8 or later. It prints a JSON report containing:
 
 | Field | Meaning |

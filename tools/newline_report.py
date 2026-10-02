@@ -1,6 +1,7 @@
 """Report LF, CRLF, and CR line endings without changing a file."""
 
 import argparse
+from contextlib import nullcontext
 import json
 import sys
 from pathlib import Path
@@ -38,14 +39,15 @@ def inspect_stream(stream, chunk_size=1024 * 1024):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("file", type=Path)
+    parser.add_argument("file", help="input file, or - for binary standard input")
     parser.add_argument("--expect", choices=("lf", "crlf", "cr"),
                         help="fail if any line ending uses another style")
     parser.add_argument("--require-final-newline", action="store_true",
                         help="fail when a nonempty file lacks a final newline")
     args = parser.parse_args(argv)
     try:
-        with args.file.open("rb") as stream:
+        context = nullcontext(sys.stdin.buffer) if args.file == "-" else Path(args.file).open("rb")
+        with context as stream:
             report = inspect_stream(stream)
     except OSError as error:
         print("Unable to read file: {}".format(error), file=sys.stderr)

@@ -10,6 +10,24 @@ from tools.newline_report import inspect_stream
 
 
 class NewlineReportTests(unittest.TestCase):
+    def test_stdin_preserves_line_endings_and_policy_status(self):
+        script = Path(__file__).resolve().parents[1] / 'tools/newline_report.py'
+        for data, code in [(b'', 0), (b'a\n', 0), (b'a\r\nb\n', 1), (b'last', 1)]:
+            with self.subTest(data=data):
+                result = subprocess.run([sys.executable, str(script), '-', '--expect', 'lf',
+                                         '--require-final-newline'], input=data, capture_output=True)
+                self.assertEqual(result.returncode, code, result.stderr)
+                self.assertEqual(json.loads(result.stdout), inspect_stream(io.BytesIO(data)))
+
+    def test_literal_dash_path(self):
+        script = Path(__file__).resolve().parents[1] / 'tools/newline_report.py'
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / '-').write_bytes(b'file\r\n')
+            result = subprocess.run([sys.executable, str(script), './-'], cwd=directory,
+                                    input=b'stdin\n', capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)['crlf'], 1)
+
     def test_endings_across_chunk_boundaries(self):
         data = b"a\r\nb\nc\rd\r\nlast"
         expected = dict(bytes=len(data), lf=1, crlf=2, cr=1, lines=5,
