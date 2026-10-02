@@ -37,6 +37,27 @@ Errors go to standard error. A difference is a normal comparison result, so its
 report goes to standard output with no error message. Quote paths containing
 spaces, and use `--` before filenames beginning with a dash.
 
+## Compare in a shell script
+
+`--quiet` suppresses the JSON report while retaining read-error diagnostics.
+Distinguish a difference (1) from an error (2), rather than treating every
+nonzero exit as a changed file:
+
+```sh
+if python3 tools/compare_files.py original.bin copy.bin --quiet; then
+    echo 'Identical'
+else
+    comparison_status=$?
+    case "$comparison_status" in
+        1) echo 'Contents differ' ;;
+        *) echo 'Comparison failed' >&2; exit "$comparison_status" ;;
+    esac
+fi
+```
+
+The command is used as an `if` condition so expected differences do not abort
+scripts using `set -e`. Capture its status immediately in the `else` branch.
+
 The comparison is byte-for-byte: text encoding, line-ending style, and Unicode
 normalization are not ignored. File metadata such as permissions is not compared.
 Use regular files that are not being modified during the comparison; this tool

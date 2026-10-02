@@ -29,13 +29,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("left", type=Path)
     parser.add_argument("right", type=Path)
+    parser.add_argument("--quiet", action="store_true", help="suppress the comparison report; retain read errors")
     args = parser.parse_args(argv)
     try:
         result = compare_files(args.left, args.right)
     except OSError as error:
         print("Unable to compare files: {}".format(error), file=sys.stderr)
         return 2
-    print(json.dumps(result, indent=2))
+    if not args.quiet:
+        print(json.dumps(result, indent=2))
     return 0 if result["equal"] else 1
 
 

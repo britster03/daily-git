@@ -9,6 +9,21 @@ from tools.compare_files import compare_files
 
 
 class CompareFilesTests(unittest.TestCase):
+    def test_quiet_preserves_status_and_read_errors(self):
+        script = Path(__file__).resolve().parents[1] / 'tools/compare_files.py'
+        self.left.write_bytes(b'abc')
+        for data, code in [(b'abc', 0), (b'abd', 1), (None, 2)]:
+            with self.subTest(code=code):
+                if data is None:
+                    self.right.unlink()
+                else:
+                    self.right.write_bytes(data)
+                result = subprocess.run([sys.executable, str(script), str(self.left),
+                                         str(self.right), '--quiet'], capture_output=True, text=True)
+                self.assertEqual(result.returncode, code)
+                self.assertEqual(result.stdout, '')
+                self.assertEqual(bool(result.stderr), code == 2)
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
