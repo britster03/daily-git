@@ -6,6 +6,7 @@ easy to use without extra dependencies.
 
 ## Guides
 
+- [Validate a JSON Lines export](guides/validate-json-export.md)
 - [Test command-line tool behavior](guides/test-command-line-tools.md)
 - [Stop tracking an ignored generated file](guides/git-ignore-tracked-files.md)
 - [Review exactly what you are about to commit](guides/review-before-commit.md)
